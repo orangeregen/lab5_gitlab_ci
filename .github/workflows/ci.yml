@@ -1,59 +1,50 @@
-stages:          # List of stages for jobs, and their order of execution
-  - test
-  - build
-  - publish
-  - deploy
+name: DevOps CI Pipeline
 
-variables:
-  CI_REGISTRY_IMAGE: devops-pgu-app
+on:
+  push:
+    branches: [ main ]
+  pull_request:
 
-pylint:
-  stage: test
-  image: registry.gitlab.com/mafda/python-linting
-  script:
-    - pip3 install -r requirements.txt
-    - find . -type f -name "*.py" | xargs pylint
-  only:
-    - main
-    - merge_requests
-  tags:
-    - devops_2024_pgu_docker
+jobs:
 
-# Use this if your GitLab runner does not use socket binding
-# services:
-#   - docker:dind
+  test:
+    runs-on: ubuntu-latest
 
-docker build:
-  stage: build
-  only:
-    - main
-  script:
-    - docker build -t $DOCKER_HUB_FOLDER/$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
-  tags:
-    - devops_2024_pgu
+    steps:
+      - uses: actions/checkout@v4
 
-push to docker hub:
-  variables:
-    GIT_STRATEGY: none
-  stage: publish
-  dependencies:
-    - docker build
-  only:
-    - main
-  script:
-    - docker login -u $DOCKER_HUB_ACCOUNT --password-stdin <<<$DOCKER_HUB_PAS
-    - docker push $DOCKER_HUB_FOLDER/$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
-  tags:
-    - devops_2024_pgu
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
 
-compose up:
-  stage: deploy
-  only:
-    - main
-  script:
-    - docker compose down
-    - echo "TAG='$CI_COMMIT_SHA'" > .env
-    - docker compose up -d --force-recreate
-    - rm .env
-  tags:
-    - devops_2024_pgu
+      - name: Install dependencies
+        run: pip install -r requirements.txt pylint
+
+      - name: Run pylint
+        run: find . -type f -name "*.py" | xargs pylint
+
+  build:
+    runs-on: ubuntu-latest
+    needs: test
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Docker image
+        run: docker build -t devops-app .
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Login DockerHub
+        run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
+
+      - name: Push image
+        run: |
+          docker tag devops-app ${{ secrets.DOCKER_USER }}/devops-app:latest
+          docker push ${{ secrets.DOCKER_USER }}/devops-app:latest
