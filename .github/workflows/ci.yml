@@ -48,10 +48,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Docker user
+        run: |
+          echo "Docker user is ${{ secrets.DOCKER_USER }}"
+          if [ -z "${{ secrets.DOCKER_USER }}" ]; then
+            echo "ERROR: DOCKER_USER secret is empty"
+            exit 1
+          fi
+
+      - name: Verify Docker image exists
+        run: |
+          if ! docker image inspect devops-app:latest > /dev/null 2>&1; then
+            echo "ERROR: Docker image devops-app:latest not found"
+            exit 1
+          fi
+
       - name: Login DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
-      - name: Push image
+      - name: Tag and Push Docker image
         run: |
-          docker tag devops-app ${{ secrets.DOCKER_USER }}/devops-app:latest
+          docker tag devops-app:latest ${{ secrets.DOCKER_USER }}/devops-app:latest
           docker push ${{ secrets.DOCKER_USER }}/devops-app:latest
