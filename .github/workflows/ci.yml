@@ -6,14 +6,14 @@ on:
   pull_request:
 
 jobs:
+
   test:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true  # заставляем использовать Node.js 24
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5  # обновлено с v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -31,10 +31,9 @@ jobs:
     needs: test
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Build Docker image
         run: docker build -t devops-app .
@@ -44,12 +43,11 @@ jobs:
     needs: build
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
-
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
-      - name: Log in to DockerHub
+      - name: Login DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
 
       - name: Push Docker image
