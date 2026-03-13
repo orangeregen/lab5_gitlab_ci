@@ -6,19 +6,23 @@ on:
   pull_request:
 
 jobs:
-
   test:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      - uses: actions/checkout@v4           
-      - name: Install Python
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.10"
+
       - name: Install dependencies
-        run: pip install --upgrade pip && pip install -r requirements.txt pylint
+        run: pip install -r requirements.txt pylint
+
       - name: Run pylint
         run: find . -type f -name "*.py" | xargs pylint
 
@@ -27,8 +31,11 @@ jobs:
     needs: test
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout code
+        uses: actions/checkout@v4
+
       - name: Build Docker image
         run: docker build -t devops-app .
 
@@ -37,11 +44,15 @@ jobs:
     needs: build
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
     steps:
-      - uses: actions/checkout@v4
-      - name: Login DockerHub
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Log in to DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
-      - name: Push image
+
+      - name: Push Docker image
         run: |
           docker tag devops-app ${{ secrets.DOCKER_USER }}/devops-app:latest
           docker push ${{ secrets.DOCKER_USER }}/devops-app:latest
