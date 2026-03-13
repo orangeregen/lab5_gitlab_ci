@@ -1,1 +1,59 @@
+stages:          # List of stages for jobs, and their order of execution
+  - test
+  - build
+  - publish
+  - deploy
 
+variables:
+  CI_REGISTRY_IMAGE: devops-pgu-app
+
+pylint:
+  stage: test
+  image: registry.gitlab.com/mafda/python-linting
+  script:
+    - pip3 install -r requirements.txt
+    - find . -type f -name "*.py" | xargs pylint
+  only:
+    - main
+    - merge_requests
+  tags:
+    - devops_2024_pgu_docker
+
+# Use this if your GitLab runner does not use socket binding
+# services:
+#   - docker:dind
+
+docker build:
+  stage: build
+  only:
+    - main
+  script:
+    - docker build -t $DOCKER_HUB_FOLDER/$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA .
+  tags:
+    - devops_2024_pgu
+
+push to docker hub:
+  variables:
+    GIT_STRATEGY: none
+  stage: publish
+  dependencies:
+    - docker build
+  only:
+    - main
+  script:
+    - docker login -u $DOCKER_HUB_ACCOUNT --password-stdin <<<$DOCKER_HUB_PAS
+    - docker push $DOCKER_HUB_FOLDER/$CI_REGISTRY_IMAGE:$CI_COMMIT_SHA
+  tags:
+    - devops_2024_pgu
+
+compose up:
+  stage: deploy
+  only:
+    - main
+  script:
+    - docker compose down
+    - echo "TAG='$CI_COMMIT_SHA'" > .env
+    - docker compose up -d --force-recreate
+    - rm .env
+  tags:
+    - devops_2024_pgu
