@@ -10,11 +10,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
     env:
-      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   # принудительно использовать Node.js 24 для actions
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true   
     steps:
-      - uses: actions/checkout@v4.11.0             # обновленная версия checkout
+      - uses: actions/checkout@v4           
       - name: Install Python
-        uses: actions/setup-python@v5.3.0         # обновленная версия setup-python
+        uses: actions/setup-python@v5
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -28,7 +28,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4.11.0
+      - uses: actions/checkout@v4
       - name: Build Docker image
         run: docker build -t devops-app .
 
@@ -38,7 +38,7 @@ jobs:
     env:
       FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
     steps:
-      - uses: actions/checkout@v4.11.0
+      - uses: actions/checkout@v4
       - name: Login DockerHub
         run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USER }}" --password-stdin
       - name: Push image
